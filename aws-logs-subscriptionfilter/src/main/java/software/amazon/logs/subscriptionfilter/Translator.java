@@ -10,8 +10,11 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import software.amazon.awssdk.services.cloudwatchlogs.model.DeleteSubscriptionFilterRequest;
 import software.amazon.awssdk.services.cloudwatchlogs.model.DescribeSubscriptionFiltersRequest;
+import software.amazon.awssdk.services.cloudwatchlogs.model.DescribeSubscriptionFiltersResponse;
 import software.amazon.awssdk.services.cloudwatchlogs.model.PutSubscriptionFilterRequest;
+import software.amazon.awssdk.services.cloudwatchlogs.model.SubscriptionFilter;
 
 /**
  * This class is a centralized placeholder for
@@ -61,10 +64,22 @@ public class Translator {
    * @return model resource model
    */
   static ResourceModel translateFromReadResponse(final AwsResponse awsResponse) {
-    // e.g. https://github.com/aws-cloudformation/aws-cloudformation-resource-providers-logs/blob/2077c92299aeb9a68ae8f4418b5e932b12a8b186/aws-logs-loggroup/src/main/java/com/aws/logs/loggroup/Translator.java#L58-L73
-    return ResourceModel.builder()
-        //.someProperty(response.property())
-        .build();
+    DescribeSubscriptionFiltersResponse response = (DescribeSubscriptionFiltersResponse) awsResponse;
+    List<SubscriptionFilter> subscriptionFilters = response.subscriptionFilters();
+    SubscriptionFilter subscriptionFilter = subscriptionFilters.size() > 0 ? subscriptionFilters.get(0) : null;
+    if (subscriptionFilter == null) {
+      return ResourceModel.builder()
+          .build();
+    } else {
+      return ResourceModel.builder()
+          .destinationArn(subscriptionFilter.destinationArn())
+          .distribution(subscriptionFilter.distributionAsString())
+          .filterName(subscriptionFilter.filterName())
+          .filterPattern(subscriptionFilter.filterPattern())
+          .logGroupName(subscriptionFilter.logGroupName())
+          .roleArn(subscriptionFilter.roleArn())
+          .build();
+    }
   }
 
   /**
@@ -73,10 +88,10 @@ public class Translator {
    * @return awsRequest the aws service request to delete a resource
    */
   static AwsRequest translateToDeleteRequest(final ResourceModel model) {
-    final AwsRequest awsRequest = null;
-    // TODO: construct a request
-    // e.g. https://github.com/aws-cloudformation/aws-cloudformation-resource-providers-logs/blob/2077c92299aeb9a68ae8f4418b5e932b12a8b186/aws-logs-loggroup/src/main/java/com/aws/logs/loggroup/Translator.java#L33-L37
-    return awsRequest;
+    return DeleteSubscriptionFilterRequest.builder()
+        .filterName(model.getFilterName())
+        .logGroupName(model.getLogGroupName())
+        .build();
   }
 
   /**
@@ -85,10 +100,7 @@ public class Translator {
    * @return awsRequest the aws service request to modify a resource
    */
   static AwsRequest translateToFirstUpdateRequest(final ResourceModel model) {
-    final AwsRequest awsRequest = null;
-    // TODO: construct a request
-    // e.g. https://github.com/aws-cloudformation/aws-cloudformation-resource-providers-logs/blob/2077c92299aeb9a68ae8f4418b5e932b12a8b186/aws-logs-loggroup/src/main/java/com/aws/logs/loggroup/Translator.java#L45-L50
-    return awsRequest;
+    return translateToCreateRequest(model);
   }
 
   /**
@@ -97,9 +109,7 @@ public class Translator {
    * @return awsRequest the aws service request to modify a resource
    */
   static AwsRequest translateToSecondUpdateRequest(final ResourceModel model) {
-    final AwsRequest awsRequest = null;
-    // TODO: construct a request
-    return awsRequest;
+    return translateToCreateRequest(model);
   }
 
   /**
@@ -108,10 +118,10 @@ public class Translator {
    * @return awsRequest the aws service request to list resources within aws account
    */
   static AwsRequest translateToListRequest(final String nextToken) {
-    final AwsRequest awsRequest = null;
-    // TODO: construct a request
-    // e.g. https://github.com/aws-cloudformation/aws-cloudformation-resource-providers-logs/blob/2077c92299aeb9a68ae8f4418b5e932b12a8b186/aws-logs-loggroup/src/main/java/com/aws/logs/loggroup/Translator.java#L26-L31
-    return awsRequest;
+    return DescribeSubscriptionFiltersRequest.builder()
+        .nextToken(nextToken)
+        .limit(50)
+        .build();
   }
 
   /**
@@ -120,10 +130,15 @@ public class Translator {
    * @return list of resource models
    */
   static List<ResourceModel> translateFromListRequest(final AwsResponse awsResponse) {
-    // e.g. https://github.com/aws-cloudformation/aws-cloudformation-resource-providers-logs/blob/2077c92299aeb9a68ae8f4418b5e932b12a8b186/aws-logs-loggroup/src/main/java/com/aws/logs/loggroup/Translator.java#L75-L82
-    return streamOfOrEmpty(Lists.newArrayList())
+    DescribeSubscriptionFiltersResponse response = (DescribeSubscriptionFiltersResponse) awsResponse;
+    return streamOfOrEmpty(response.subscriptionFilters())
         .map(resource -> ResourceModel.builder()
-            // include only primary identifier
+            .destinationArn(resource.destinationArn())
+            .distribution(resource.distributionAsString())
+            .filterName(resource.filterName())
+            .filterPattern(resource.filterPattern())
+            .logGroupName(resource.logGroupName())
+            .roleArn(resource.roleArn())
             .build())
         .collect(Collectors.toList());
   }
