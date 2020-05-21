@@ -1,5 +1,6 @@
 package software.amazon.logs.subscriptionfilter;
 
+import com.amazonaws.util.StringUtils;
 import com.google.common.collect.Lists;
 import software.amazon.awssdk.awscore.AwsRequest;
 import software.amazon.awssdk.awscore.AwsResponse;
@@ -9,6 +10,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import software.amazon.awssdk.services.cloudwatchlogs.model.DescribeSubscriptionFiltersRequest;
+import software.amazon.awssdk.services.cloudwatchlogs.model.PutSubscriptionFilterRequest;
 
 /**
  * This class is a centralized placeholder for
@@ -19,28 +22,37 @@ import java.util.stream.Stream;
 
 public class Translator {
 
+  public static final String DEFAULT_DISTRIBUTION = "ByLogStream";
+
   /**
    * Request to create a resource
    * @param model resource model
    * @return awsRequest the aws service request to create a resource
    */
   static AwsRequest translateToCreateRequest(final ResourceModel model) {
-    final AwsRequest awsRequest = null;
-    // TODO: construct a request
-    // e.g. https://github.com/aws-cloudformation/aws-cloudformation-resource-providers-logs/blob/2077c92299aeb9a68ae8f4418b5e932b12a8b186/aws-logs-loggroup/src/main/java/com/aws/logs/loggroup/Translator.java#L39-L43
-    return awsRequest;
+    if (StringUtils.isNullOrEmpty(model.getDistribution())) {
+      model.setDistribution(DEFAULT_DISTRIBUTION);
+    }
+    return PutSubscriptionFilterRequest.builder()
+        .logGroupName(model.getLogGroupName())
+        .filterName(model.getFilterName())
+        .filterPattern(model.getFilterPattern())
+        .destinationArn(model.getDestinationArn())
+        .roleArn(model.getRoleArn())
+        .distribution(model.getDistribution())
+        .build();
   }
-
   /**
    * Request to read a resource
    * @param model resource model
    * @return awsRequest the aws service request to describe a resource
    */
   static AwsRequest translateToReadRequest(final ResourceModel model) {
-    final AwsRequest awsRequest = null;
-    // TODO: construct a request
-    // e.g. https://github.com/aws-cloudformation/aws-cloudformation-resource-providers-logs/blob/2077c92299aeb9a68ae8f4418b5e932b12a8b186/aws-logs-loggroup/src/main/java/com/aws/logs/loggroup/Translator.java#L20-L24
-    return awsRequest;
+      return DescribeSubscriptionFiltersRequest.builder()
+          .filterNamePrefix(model.getFilterName())
+          .logGroupName(model.getLogGroupName())
+          .limit(1)
+          .build();
   }
 
   /**

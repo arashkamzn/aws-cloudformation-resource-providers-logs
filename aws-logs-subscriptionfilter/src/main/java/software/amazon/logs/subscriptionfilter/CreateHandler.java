@@ -1,7 +1,7 @@
 package software.amazon.logs.subscriptionfilter;
 
 // TODO: replace all usage of SdkClient with your service client type, e.g; YourServiceAsyncClient
-// import software.amazon.awssdk.services.yourservice.YourServiceAsyncClient;
+import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsClient;
 
 import java.util.Objects;
 import software.amazon.awssdk.awscore.AwsRequest;
@@ -24,7 +24,7 @@ public class CreateHandler extends BaseHandlerStd {
         final AmazonWebServicesClientProxy proxy,
         final ResourceHandlerRequest<ResourceModel> request,
         final CallbackContext callbackContext,
-        final ProxyClient<SdkClient> proxyClient,
+        final ProxyClient<CloudWatchLogsClient> proxyClient,
         final Logger logger) {
 
         this.logger = logger;
@@ -37,13 +37,10 @@ public class CreateHandler extends BaseHandlerStd {
         return ProgressEvent.progress(model, callbackContext)
 
             // STEP 1 [check if resource already exists]
-            // if target API does not support 'ResourceAlreadyExistsException' then following check is required
-            // for more information -> https://docs.aws.amazon.com/cloudformation-cli/latest/userguide/resource-type-test-contract.html
-            //.then(progress -> checkForPreCreateResourceExistence(proxy, request, progress))
+            .then(progress -> checkForPreCreateResourceExistence(proxy, request, progress))
 
             // STEP 2 [create/stabilize progress chain - required for resource creation]
             .then(progress ->
-                // If your service API throws 'ResourceAlreadyExistsException' for create requests then CreateHandler can return just proxy.initiate construction
                 // STEP 2.0 [initialize a proxy context]
                 proxy.initiate("AWS-Logs-SubscriptionFilter::Create", proxyClient, model, callbackContext)
 
@@ -109,7 +106,7 @@ public class CreateHandler extends BaseHandlerStd {
      */
     private AwsResponse createResource(
         final AwsRequest awsRequest,
-        final ProxyClient<SdkClient> proxyClient) {
+        final ProxyClient<CloudWatchLogsClient> proxyClient) {
         AwsResponse awsResponse = null;
         try {
 
@@ -143,7 +140,7 @@ public class CreateHandler extends BaseHandlerStd {
     private boolean stabilizedOnCreate(
         final AwsRequest awsRequest,
         final AwsResponse awsResponse,
-        final ProxyClient<SdkClient> proxyClient,
+        final ProxyClient<CloudWatchLogsClient> proxyClient,
         final ResourceModel model,
         final CallbackContext callbackContext) {
 
@@ -163,7 +160,7 @@ public class CreateHandler extends BaseHandlerStd {
      */
     private AwsResponse postCreate(
         final AwsRequest awsRequest,
-        final ProxyClient<SdkClient> proxyClient) {
+        final ProxyClient<CloudWatchLogsClient> proxyClient) {
         AwsResponse awsResponse = null;
         try {
 

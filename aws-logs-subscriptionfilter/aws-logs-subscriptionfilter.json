@@ -1,104 +1,85 @@
 {
     "typeName": "AWS::Logs::SubscriptionFilter",
-    "description": "An example resource schema demonstrating some basic constructs and validation rules.",
-    "sourceUrl": "https://github.com/aws-cloudformation/aws-cloudformation-rpdk.git",
-    "definitions": {
-        "InitechDateFormat": {
-            "$comment": "Use the `definitions` block to provide shared resource property schemas",
-            "type": "string",
-            "format": "date-time"
-        },
-        "Memo": {
-            "type": "object",
-            "properties": {
-                "Heading": {
-                    "type": "string"
-                },
-                "Body": {
-                    "type": "string"
-                }
-            },
-            "additionalProperties": false
-        }
-    },
+    "description": "Specifies a subscription filter and associates it with the specified log group.",
+    "sourceUrl": "https://github.com/aws-cloudformation/aws-cloudformation-resource-providers-logs.git",
+
     "properties": {
-        "TPSCode": {
-            "description": "A TPS Code is automatically generated on creation and assigned as the unique identifier.",
+        "DestinationArn": {
+            "description": "The ARN of the destination to deliver matching log events to.",
             "type": "string",
-            "pattern": "^[A-Z]{3,5}[0-9]{8}-[0-9]{4}$"
+            "minLength": 1
         },
-        "Title": {
-            "description": "The title of the TPS report is a mandatory element.",
+        "Distribution": {
+            "description": "The method used to distribute log data to the destination.",
             "type": "string",
-            "minLength": 20,
-            "maxLength": 250
+            "pattern": "^Random$|^ByLogStream$"
         },
-        "CoverSheetIncluded": {
-            "description": "Required for all TPS Reports submitted after 2/19/1999",
-            "type": "boolean"
-        },
-        "DueDate": {
-            "$ref": "#/definitions/InitechDateFormat"
-        },
-        "ApprovalDate": {
-            "$ref": "#/definitions/InitechDateFormat"
-        },
-        "Memo": {
-            "$ref": "#/definitions/Memo"
-        },
-        "SecondCopyOfMemo": {
-            "description": "In case you didn't get the first one.",
-            "$ref": "#/definitions/Memo"
-        },
-        "TestCode": {
+        "FilterName": {
+            "description": "A name for the subscription filter.",
             "type": "string",
-            "enum": [
-                "NOT_STARTED",
-                "CANCELLED"
-            ]
+            "minLength": 1,
+            "maxLength": 512,
+            "pattern": "[^:*]*"
         },
-        "Authors": {
-            "type": "array",
-            "items": {
-                "type": "string"
-            }
+        "FilterPattern": {
+            "description": "A filter pattern for subscribing to a filtered stream of log events.",
+            "type": "string",
+            "minLength": 0,
+            "maxLength": 1024
+        },
+        "LogGroupName": {
+            "description":"The name of the log group.",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512,
+            "pattern": "[\\.\\-_/#A-Za-z0-9]+"
+        },
+        "RoleArn": {
+            "description":"The ARN of an IAM role that grants CloudWatch Logs permissions to deliver ingested log events to the destination stream.",
+            "type": "string",
+            "minLength": 1
         }
     },
     "additionalProperties": false,
     "required": [
-        "TestCode",
-        "Title"
-    ],
-    "readOnlyProperties": [
-        "/properties/TPSCode"
+        "DestinationArn",
+        "FilterPattern",
+        "LogGroupName"
     ],
     "primaryIdentifier": [
-        "/properties/TPSCode"
+        "/properties/FilterName",
+        "/properties/LogGroupName"
+    ],
+    "createOnlyProperties": [
+        "/properties/FilterName",
+        "/properties/LogGroupName"
     ],
     "handlers": {
         "create": {
             "permissions": [
-                "initech:CreateReport"
+                "logs:PutSubscriptionFilter",
+                "logs:DescribeSubscriptionFilters"
             ]
         },
         "read": {
             "permissions": [
-                "initech:DescribeReport"
+                "logs:DescribeSubscriptionFilters"
             ]
         },
         "update": {
             "permissions": [
-                "initech:UpdateReport"
+                "logs:PutSubscriptionFilter",
+                "logs:DescribeSubscriptionFilters"
             ]
         },
         "delete": {
             "permissions": [
-                "initech:DeleteReport"
+                "logs:DeleteDestination"
             ]
         },
         "list": {
             "permissions": [
-                "initech:ListReports"
+                "logs:DescribeSubscriptionFilters"
             ]
         }
     }

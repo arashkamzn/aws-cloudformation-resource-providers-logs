@@ -1,7 +1,6 @@
 package software.amazon.logs.subscriptionfilter;
 
-// TODO: replace all usage of SdkClient with your service client type, e.g; YourServiceAsyncClient
-// import software.amazon.awssdk.services.yourservice.YourServiceAsyncClient;
+import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsClient;
 
 import software.amazon.awssdk.awscore.AwsRequest;
 import software.amazon.awssdk.awscore.AwsResponse;
@@ -22,7 +21,7 @@ public class DeleteHandler extends BaseHandlerStd {
         final AmazonWebServicesClientProxy proxy,
         final ResourceHandlerRequest<ResourceModel> request,
         final CallbackContext callbackContext,
-        final ProxyClient<SdkClient> proxyClient,
+        final ProxyClient<CloudWatchLogsClient> proxyClient,
         final Logger logger) {
 
         this.logger = logger;
@@ -93,7 +92,7 @@ public class DeleteHandler extends BaseHandlerStd {
      */
     private AwsResponse deleteResource(
         final AwsRequest awsRequest,
-        final ProxyClient<SdkClient> proxyClient) {
+        final ProxyClient<CloudWatchLogsClient> proxyClient) {
         AwsResponse awsResponse = null;
         try {
 
@@ -126,7 +125,7 @@ public class DeleteHandler extends BaseHandlerStd {
     private boolean stabilizedOnDelete(
         final AwsRequest awsRequest,
         final AwsResponse awsResponse,
-        final ProxyClient<SdkClient> proxyClient,
+        final ProxyClient<CloudWatchLogsClient> proxyClient,
         final ResourceModel model,
         final CallbackContext callbackContext) {
 

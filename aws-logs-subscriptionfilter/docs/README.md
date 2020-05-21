@@ -1,6 +1,6 @@
 # AWS::Logs::SubscriptionFilter
 
-An example resource schema demonstrating some basic constructs and validation rules.
+Specifies a subscription filter and associates it with the specified log group.
 
 ## Syntax
 
@@ -12,14 +12,12 @@ To declare this entity in your AWS CloudFormation template, use the following sy
 {
     "Type" : "AWS::Logs::SubscriptionFilter",
     "Properties" : {
-        "<a href="#title" title="Title">Title</a>" : <i>String</i>,
-        "<a href="#coversheetincluded" title="CoverSheetIncluded">CoverSheetIncluded</a>" : <i>Boolean</i>,
-        "<a href="#duedate" title="DueDate">DueDate</a>" : <i>String</i>,
-        "<a href="#approvaldate" title="ApprovalDate">ApprovalDate</a>" : <i>String</i>,
-        "<a href="#memo" title="Memo">Memo</a>" : <i><a href="secondcopyofmemo.md">SecondCopyOfMemo</a></i>,
-        "<a href="#secondcopyofmemo" title="SecondCopyOfMemo">SecondCopyOfMemo</a>" : <i><a href="secondcopyofmemo.md">SecondCopyOfMemo</a></i>,
-        "<a href="#testcode" title="TestCode">TestCode</a>" : <i>String</i>,
-        "<a href="#authors" title="Authors">Authors</a>" : <i>[ String, ... ]</i>
+        "<a href="#destinationarn" title="DestinationArn">DestinationArn</a>" : <i>String</i>,
+        "<a href="#distribution" title="Distribution">Distribution</a>" : <i>String</i>,
+        "<a href="#filtername" title="FilterName">FilterName</a>" : <i>String</i>,
+        "<a href="#filterpattern" title="FilterPattern">FilterPattern</a>" : <i>String</i>,
+        "<a href="#loggroupname" title="LogGroupName">LogGroupName</a>" : <i>String</i>,
+        "<a href="#rolearn" title="RoleArn">RoleArn</a>" : <i>String</i>
     }
 }
 </pre>
@@ -29,106 +27,93 @@ To declare this entity in your AWS CloudFormation template, use the following sy
 <pre>
 Type: AWS::Logs::SubscriptionFilter
 Properties:
-    <a href="#title" title="Title">Title</a>: <i>String</i>
-    <a href="#coversheetincluded" title="CoverSheetIncluded">CoverSheetIncluded</a>: <i>Boolean</i>
-    <a href="#duedate" title="DueDate">DueDate</a>: <i>String</i>
-    <a href="#approvaldate" title="ApprovalDate">ApprovalDate</a>: <i>String</i>
-    <a href="#memo" title="Memo">Memo</a>: <i><a href="secondcopyofmemo.md">SecondCopyOfMemo</a></i>
-    <a href="#secondcopyofmemo" title="SecondCopyOfMemo">SecondCopyOfMemo</a>: <i><a href="secondcopyofmemo.md">SecondCopyOfMemo</a></i>
-    <a href="#testcode" title="TestCode">TestCode</a>: <i>String</i>
-    <a href="#authors" title="Authors">Authors</a>: <i>
-      - String</i>
+    <a href="#destinationarn" title="DestinationArn">DestinationArn</a>: <i>String</i>
+    <a href="#distribution" title="Distribution">Distribution</a>: <i>String</i>
+    <a href="#filtername" title="FilterName">FilterName</a>: <i>String</i>
+    <a href="#filterpattern" title="FilterPattern">FilterPattern</a>: <i>String</i>
+    <a href="#loggroupname" title="LogGroupName">LogGroupName</a>: <i>String</i>
+    <a href="#rolearn" title="RoleArn">RoleArn</a>: <i>String</i>
 </pre>
 
 ## Properties
 
-#### Title
+#### DestinationArn
 
-The title of the TPS report is a mandatory element.
-
-_Required_: Yes
-
-_Type_: String
-
-_Minimum_: <code>20</code>
-
-_Maximum_: <code>250</code>
-
-_Update requires_: [No interruption](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/using-cfn-updating-stacks-update-behaviors.html#update-no-interrupt)
-
-#### CoverSheetIncluded
-
-Required for all TPS Reports submitted after 2/19/1999
-
-_Required_: No
-
-_Type_: Boolean
-
-_Update requires_: [No interruption](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/using-cfn-updating-stacks-update-behaviors.html#update-no-interrupt)
-
-#### DueDate
-
-_Required_: No
-
-_Type_: String
-
-_Update requires_: [No interruption](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/using-cfn-updating-stacks-update-behaviors.html#update-no-interrupt)
-
-#### ApprovalDate
-
-_Required_: No
-
-_Type_: String
-
-_Update requires_: [No interruption](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/using-cfn-updating-stacks-update-behaviors.html#update-no-interrupt)
-
-#### Memo
-
-_Required_: No
-
-_Type_: <a href="secondcopyofmemo.md">SecondCopyOfMemo</a>
-
-_Update requires_: [No interruption](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/using-cfn-updating-stacks-update-behaviors.html#update-no-interrupt)
-
-#### SecondCopyOfMemo
-
-_Required_: No
-
-_Type_: <a href="secondcopyofmemo.md">SecondCopyOfMemo</a>
-
-_Update requires_: [No interruption](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/using-cfn-updating-stacks-update-behaviors.html#update-no-interrupt)
-
-#### TestCode
+The ARN of the destination to deliver matching log events to.
 
 _Required_: Yes
 
 _Type_: String
 
-_Allowed Values_: <code>NOT_STARTED</code> | <code>CANCELLED</code>
+_Minimum_: <code>1</code>
 
 _Update requires_: [No interruption](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/using-cfn-updating-stacks-update-behaviors.html#update-no-interrupt)
 
-#### Authors
+#### Distribution
+
+The method used to distribute log data to the destination.
 
 _Required_: No
 
-_Type_: List of String
+_Type_: String
+
+_Pattern_: <code>^Random$|^ByLogStream$</code>
 
 _Update requires_: [No interruption](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/using-cfn-updating-stacks-update-behaviors.html#update-no-interrupt)
 
-## Return Values
+#### FilterName
 
-### Ref
+A name for the subscription filter.
 
-When you pass the logical ID of this resource to the intrinsic `Ref` function, Ref returns the TPSCode.
+_Required_: No
 
-### Fn::GetAtt
+_Type_: String
 
-The `Fn::GetAtt` intrinsic function returns a value for a specified attribute of this type. The following are the available attributes and sample return values.
+_Minimum_: <code>1</code>
 
-For more information about using the `Fn::GetAtt` intrinsic function, see [Fn::GetAtt](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/intrinsic-function-reference-getatt.html).
+_Maximum_: <code>512</code>
 
-#### TPSCode
+_Pattern_: <code>[^:*]*</code>
 
-A TPS Code is automatically generated on creation and assigned as the unique identifier.
+_Update requires_: [Replacement](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/using-cfn-updating-stacks-update-behaviors.html#update-replacement)
+
+#### FilterPattern
+
+A filter pattern for subscribing to a filtered stream of log events.
+
+_Required_: Yes
+
+_Type_: String
+
+_Maximum_: <code>1024</code>
+
+_Update requires_: [No interruption](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/using-cfn-updating-stacks-update-behaviors.html#update-no-interrupt)
+
+#### LogGroupName
+
+The name of the log group.
+
+_Required_: Yes
+
+_Type_: String
+
+_Minimum_: <code>1</code>
+
+_Maximum_: <code>512</code>
+
+_Pattern_: <code>[\.\-_/#A-Za-z0-9]+</code>
+
+_Update requires_: [Replacement](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/using-cfn-updating-stacks-update-behaviors.html#update-replacement)
+
+#### RoleArn
+
+The ARN of an IAM role that grants CloudWatch Logs permissions to deliver ingested log events to the destination stream.
+
+_Required_: No
+
+_Type_: String
+
+_Minimum_: <code>1</code>
+
+_Update requires_: [No interruption](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/using-cfn-updating-stacks-update-behaviors.html#update-no-interrupt)
 
