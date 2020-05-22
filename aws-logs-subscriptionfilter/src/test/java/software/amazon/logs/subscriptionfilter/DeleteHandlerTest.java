@@ -2,7 +2,10 @@ package software.amazon.logs.subscriptionfilter;
 
 import java.time.Duration;
 
+import org.mockito.ArgumentMatchers;
 import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsClient;
+import software.amazon.awssdk.services.cloudwatchlogs.model.DeleteSubscriptionFilterRequest;
+import software.amazon.awssdk.services.cloudwatchlogs.model.DeleteSubscriptionFilterResponse;
 import software.amazon.cloudformation.proxy.AmazonWebServicesClientProxy;
 import software.amazon.cloudformation.proxy.OperationStatus;
 import software.amazon.cloudformation.proxy.ProgressEvent;
@@ -16,6 +19,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 public class DeleteHandlerTest extends AbstractTestBase {
@@ -40,11 +44,15 @@ public class DeleteHandlerTest extends AbstractTestBase {
     public void handleRequest_SimpleSuccess() {
         final DeleteHandler handler = new DeleteHandler();
 
-        final ResourceModel model = ResourceModel.builder().build();
+        final ResourceModel model = buildDefaultModel();
+
+        when(proxyClient.client().deleteSubscriptionFilter(ArgumentMatchers.any(DeleteSubscriptionFilterRequest.class)))
+            .thenReturn(DeleteSubscriptionFilterResponse.builder().build());
 
         final ResourceHandlerRequest<ResourceModel> request = ResourceHandlerRequest.<ResourceModel>builder()
             .desiredResourceState(model)
             .build();
+
 
         final ProgressEvent<ResourceModel, CallbackContext> response = handler.handleRequest(proxy, request, new CallbackContext(), proxyClient, logger);
 
