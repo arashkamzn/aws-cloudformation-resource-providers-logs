@@ -1,16 +1,23 @@
 package software.amazon.logs.subscriptionfilter;
 
-// TODO: replace all usage of SdkClient with your service client type, e.g; YourServiceAsyncClient
 import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsClient;
 
 import java.util.Objects;
 import software.amazon.awssdk.awscore.AwsRequest;
 import software.amazon.awssdk.awscore.AwsResponse;
 import software.amazon.awssdk.awscore.exception.AwsServiceException;
-import software.amazon.awssdk.core.SdkClient;
+import software.amazon.awssdk.services.cloudwatchlogs.model.InvalidParameterException;
+import software.amazon.awssdk.services.cloudwatchlogs.model.LimitExceededException;
+import software.amazon.awssdk.services.cloudwatchlogs.model.OperationAbortedException;
+import software.amazon.awssdk.services.cloudwatchlogs.model.PutSubscriptionFilterRequest;
+import software.amazon.awssdk.services.cloudwatchlogs.model.ServiceUnavailableException;
 import software.amazon.cloudformation.exceptions.CfnAlreadyExistsException;
 import software.amazon.cloudformation.exceptions.CfnGeneralServiceException;
+import software.amazon.cloudformation.exceptions.CfnInvalidRequestException;
 import software.amazon.cloudformation.exceptions.CfnNotFoundException;
+import software.amazon.cloudformation.exceptions.CfnResourceConflictException;
+import software.amazon.cloudformation.exceptions.CfnServiceInternalErrorException;
+import software.amazon.cloudformation.exceptions.CfnServiceLimitExceededException;
 import software.amazon.cloudformation.proxy.AmazonWebServicesClientProxy;
 import software.amazon.cloudformation.proxy.Logger;
 import software.amazon.cloudformation.proxy.ProgressEvent;
@@ -31,45 +38,20 @@ public class CreateHandler extends BaseHandlerStd {
 
         final ResourceModel model = request.getDesiredResourceState();
 
-        // TODO: Adjust Progress Chain according to your implementation
-        // https://github.com/aws-cloudformation/cloudformation-cli-java-plugin/blob/master/src/main/java/software/amazon/cloudformation/proxy/CallChain.java
-
         return ProgressEvent.progress(model, callbackContext)
 
-            // STEP 1 [check if resource already exists]
-            .then(progress -> checkForPreCreateResourceExistence(proxy, request, progress))
+            .then(progress -> checkForPreCreateResourceExistence(proxy, request, proxyClient, progress))
 
-            // STEP 2 [create/stabilize progress chain - required for resource creation]
             .then(progress ->
-                // STEP 2.0 [initialize a proxy context]
+
                 proxy.initiate("AWS-Logs-SubscriptionFilter::Create", proxyClient, model, callbackContext)
 
-                    // STEP 2.1 [TODO: construct a body of a request]
                     .translateToServiceRequest(Translator::translateToCreateRequest)
 
-                    // STEP 2.2 [TODO: make an api call]
                     .makeServiceCall(this::createResource)
 
-                    // STEP 2.3 [TODO: stabilize step is not necessarily required but typically involves describing the resource until it is in a certain status, though it can take many forms]
-                    // for more information -> https://docs.aws.amazon.com/cloudformation-cli/latest/userguide/resource-type-test-contract.html
-                    .stabilize(this::stabilizedOnCreate)
                     .progress())
 
-            // STEP 3 [TODO: post create/stabilize update]
-            .then(progress ->
-                // If your resource is provisioned through multiple API calls, you will need to apply each subsequent update
-                // STEP 3.0 [initialize a proxy context]
-                proxy.initiate("AWS-Logs-SubscriptionFilter::postCreate", proxyClient, model, callbackContext)
-
-                    // STEP 3.1 [TODO: construct a body of a request]
-                    .translateToServiceRequest(Translator::translateToSecondUpdateRequest)
-
-                    // STEP 3.2 [TODO: make an api call]
-                    .makeServiceCall(this::postCreate)
-                    .progress()
-                )
-
-            // STEP 4 [TODO: describe call/chain to return the resource model]
             .then(progress -> new ReadHandler().handleRequest(proxy, request, callbackContext, proxyClient, logger));
     }
 
@@ -85,11 +67,12 @@ public class CreateHandler extends BaseHandlerStd {
     private ProgressEvent<ResourceModel, CallbackContext> checkForPreCreateResourceExistence(
         final AmazonWebServicesClientProxy proxy,
         final ResourceHandlerRequest<ResourceModel> request,
+        final ProxyClient<CloudWatchLogsClient> proxyClient,
         final ProgressEvent<ResourceModel, CallbackContext> progressEvent) {
         final ResourceModel model = progressEvent.getResourceModel();
         final CallbackContext callbackContext = progressEvent.getCallbackContext();
         try {
-            new ReadHandler().handleRequest(proxy, request, callbackContext, logger);
+            new ReadHandler().handleRequest(proxy, request, callbackContext, proxyClient, logger);
             throw new CfnAlreadyExistsException(ResourceModel.TYPE_NAME, Objects.toString(model.getPrimaryIdentifier()));
         } catch (CfnNotFoundException e) {
             logger.log(model.getPrimaryIdentifier() + " does not exist; creating the resource.");
@@ -105,78 +88,23 @@ public class CreateHandler extends BaseHandlerStd {
      * @return awsResponse create resource response
      */
     private AwsResponse createResource(
-        final AwsRequest awsRequest,
+        final PutSubscriptionFilterRequest awsRequest,
         final ProxyClient<CloudWatchLogsClient> proxyClient) {
-        AwsResponse awsResponse = null;
+        AwsResponse awsResponse;
         try {
-
-            // TODO: put your create resource code here
-
-        } catch (final AwsServiceException e) {
-            /*
-             * While the handler contract states that the handler must always return a progress event,
-             * you may throw any instance of BaseHandlerException, as the wrapper map it to a progress event.
-             * Each BaseHandlerException maps to a specific error code, and you should map service exceptions as closely as possible
-             * to more specific error codes
-             */
-            throw new CfnGeneralServiceException(ResourceModel.TYPE_NAME, e);
+            awsResponse = proxyClient.injectCredentialsAndInvokeV2(awsRequest, proxyClient.client()::putSubscriptionFilter);
+        } catch (final InvalidParameterException e) {
+            throw new CfnInvalidRequestException(ResourceModel.TYPE_NAME, e);
+        } catch (final LimitExceededException e) {
+            throw new CfnServiceLimitExceededException(e);
+        } catch (final OperationAbortedException e) {
+            throw new CfnResourceConflictException(e);
+        } catch (final ServiceUnavailableException e) {
+            throw new CfnServiceInternalErrorException(e);
         }
 
         logger.log(String.format("%s successfully created.", ResourceModel.TYPE_NAME));
         return awsResponse;
     }
 
-    /**
-     * If your resource requires some form of stabilization (e.g. service does not provide strong consistency), you will need to ensure that your code
-     * accounts for any potential issues, so that a subsequent read/update requests will not cause any conflicts (e.g. NotFoundException/InvalidRequestException)
-     * for more information -> https://docs.aws.amazon.com/cloudformation-cli/latest/userguide/resource-type-test-contract.html
-     * @param awsRequest the aws service request to create a resource
-     * @param awsResponse the aws service response to create a resource
-     * @param proxyClient the aws service client to make the call
-     * @param model resource model
-     * @param callbackContext callback context
-     * @return boolean state of stabilized or not
-     */
-    private boolean stabilizedOnCreate(
-        final AwsRequest awsRequest,
-        final AwsResponse awsResponse,
-        final ProxyClient<CloudWatchLogsClient> proxyClient,
-        final ResourceModel model,
-        final CallbackContext callbackContext) {
-
-        // TODO: put your stabilization code here
-
-        final boolean stabilized = true;
-        logger.log(String.format("%s [%s] creation has stabilized: %s", ResourceModel.TYPE_NAME, model.getPrimaryIdentifier(), stabilized));
-        return stabilized;
-    }
-
-    /**
-     * If your resource is provisioned through multiple API calls, you will need to apply each subsequent update
-     * step in a discrete call/stabilize chain to ensure the entire resource is provisioned as intended.
-     * @param awsRequest the aws service request to create a resource
-     * @param proxyClient the aws service client to make the call
-     * @return awsResponse create resource response
-     */
-    private AwsResponse postCreate(
-        final AwsRequest awsRequest,
-        final ProxyClient<CloudWatchLogsClient> proxyClient) {
-        AwsResponse awsResponse = null;
-        try {
-
-            // TODO: put your post creation resource update code here
-
-        } catch (final AwsServiceException e) {
-            /*
-             * While the handler contract states that the handler must always return a progress event,
-             * you may throw any instance of BaseHandlerException, as the wrapper map it to a progress event.
-             * Each BaseHandlerException maps to a specific error code, and you should map service exceptions as closely as possible
-             * to more specific error codes
-             */
-            throw new CfnGeneralServiceException(ResourceModel.TYPE_NAME, e);
-        }
-
-        logger.log(String.format("%s successfully updated.", ResourceModel.TYPE_NAME));
-        return awsResponse;
-    }
 }

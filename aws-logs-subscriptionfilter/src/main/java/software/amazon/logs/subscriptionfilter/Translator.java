@@ -2,6 +2,7 @@ package software.amazon.logs.subscriptionfilter;
 
 import com.amazonaws.util.StringUtils;
 import com.google.common.collect.Lists;
+import java.util.ArrayList;
 import software.amazon.awssdk.awscore.AwsRequest;
 import software.amazon.awssdk.awscore.AwsResponse;
 
@@ -32,7 +33,7 @@ public class Translator {
    * @param model resource model
    * @return awsRequest the aws service request to create a resource
    */
-  static AwsRequest translateToCreateRequest(final ResourceModel model) {
+  static PutSubscriptionFilterRequest translateToCreateRequest(final ResourceModel model) {
     if (StringUtils.isNullOrEmpty(model.getDistribution())) {
       model.setDistribution(DEFAULT_DISTRIBUTION);
     }
@@ -50,7 +51,7 @@ public class Translator {
    * @param model resource model
    * @return awsRequest the aws service request to describe a resource
    */
-  static AwsRequest translateToReadRequest(final ResourceModel model) {
+  static DescribeSubscriptionFiltersRequest translateToReadRequest(final ResourceModel model) {
       return DescribeSubscriptionFiltersRequest.builder()
           .filterNamePrefix(model.getFilterName())
           .logGroupName(model.getLogGroupName())
@@ -87,7 +88,7 @@ public class Translator {
    * @param model resource model
    * @return awsRequest the aws service request to delete a resource
    */
-  static AwsRequest translateToDeleteRequest(final ResourceModel model) {
+  static DeleteSubscriptionFilterRequest translateToDeleteRequest(final ResourceModel model) {
     return DeleteSubscriptionFilterRequest.builder()
         .filterName(model.getFilterName())
         .logGroupName(model.getLogGroupName())
@@ -99,7 +100,7 @@ public class Translator {
    * @param model resource model
    * @return awsRequest the aws service request to modify a resource
    */
-  static AwsRequest translateToFirstUpdateRequest(final ResourceModel model) {
+  static PutSubscriptionFilterRequest translateToFirstUpdateRequest(final ResourceModel model) {
     return translateToCreateRequest(model);
   }
 
@@ -108,7 +109,7 @@ public class Translator {
    * @param model resource model
    * @return awsRequest the aws service request to modify a resource
    */
-  static AwsRequest translateToSecondUpdateRequest(final ResourceModel model) {
+  static PutSubscriptionFilterRequest translateToSecondUpdateRequest(final ResourceModel model) {
     return translateToCreateRequest(model);
   }
 
@@ -117,7 +118,7 @@ public class Translator {
    * @param nextToken token passed to the aws service list resources request
    * @return awsRequest the aws service request to list resources within aws account
    */
-  static AwsRequest translateToListRequest(final String nextToken) {
+  static DescribeSubscriptionFiltersRequest translateToListRequest(final String nextToken) {
     return DescribeSubscriptionFiltersRequest.builder()
         .nextToken(nextToken)
         .limit(50)
@@ -147,5 +148,20 @@ public class Translator {
     return Optional.ofNullable(collection)
         .map(Collection::stream)
         .orElseGet(Stream::empty);
+  }
+
+  static List<SubscriptionFilter> translateToSDK
+      (final ResourceModel model) {
+    SubscriptionFilter subscriptionFilter = SubscriptionFilter.builder()
+        .destinationArn(model.getDestinationArn())
+        .distribution(model.getDistribution())
+        .filterName(model.getFilterName())
+        .filterPattern(model.getFilterPattern())
+        .logGroupName(model.getLogGroupName())
+        .roleArn(model.getRoleArn())
+        .build();
+    List<SubscriptionFilter> subscriptionFilters = new ArrayList<>();
+    subscriptionFilters.add(subscriptionFilter);
+    return subscriptionFilters;
   }
 }

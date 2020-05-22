@@ -1,12 +1,21 @@
 package software.amazon.logs.subscriptionfilter;
 
+import java.util.Objects;
 import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsClient;
 
 import software.amazon.awssdk.awscore.AwsRequest;
 import software.amazon.awssdk.awscore.AwsResponse;
 import software.amazon.awssdk.awscore.exception.AwsServiceException;
 import software.amazon.awssdk.core.SdkClient;
+import software.amazon.awssdk.services.cloudwatchlogs.model.DescribeSubscriptionFiltersRequest;
+import software.amazon.awssdk.services.cloudwatchlogs.model.DescribeSubscriptionFiltersResponse;
+import software.amazon.awssdk.services.cloudwatchlogs.model.InvalidParameterException;
+import software.amazon.awssdk.services.cloudwatchlogs.model.ResourceNotFoundException;
+import software.amazon.awssdk.services.cloudwatchlogs.model.ServiceUnavailableException;
 import software.amazon.cloudformation.exceptions.CfnGeneralServiceException;
+import software.amazon.cloudformation.exceptions.CfnInvalidRequestException;
+import software.amazon.cloudformation.exceptions.CfnNotFoundException;
+import software.amazon.cloudformation.exceptions.CfnServiceInternalErrorException;
 import software.amazon.cloudformation.proxy.AmazonWebServicesClientProxy;
 import software.amazon.cloudformation.proxy.Logger;
 import software.amazon.cloudformation.proxy.ProgressEvent;
@@ -27,19 +36,12 @@ public class ReadHandler extends BaseHandlerStd {
 
         final ResourceModel model = request.getDesiredResourceState();
 
-        // TODO: Adjust Progress Chain according to your implementation
-        // https://github.com/aws-cloudformation/cloudformation-cli-java-plugin/blob/master/src/main/java/software/amazon/cloudformation/proxy/CallChain.java
-
-        // STEP 1 [initialize a proxy context]
         return proxy.initiate("AWS-Logs-SubscriptionFilter::Read", proxyClient, model, callbackContext)
 
-            // STEP 2 [TODO: construct a body of a request]
             .translateToServiceRequest(Translator::translateToReadRequest)
 
-            // STEP 3 [TODO: make an api call]
             .makeServiceCall((awsRequest, sdkProxyClient) -> readResource(awsRequest, sdkProxyClient , model))
 
-            // STEP 4 [TODO: gather all properties of the resource]
             .done(this::constructResourceModelFromResponse);
     }
 
@@ -51,22 +53,26 @@ public class ReadHandler extends BaseHandlerStd {
      * @return describe resource response
      */
     private AwsResponse readResource(
-        final AwsRequest awsRequest,
+        final DescribeSubscriptionFiltersRequest awsRequest,
         final ProxyClient<CloudWatchLogsClient> proxyClient,
         final ResourceModel model) {
-        AwsResponse awsResponse = null;
+        DescribeSubscriptionFiltersResponse awsResponse = null;
         try {
 
-            // TODO: add custom read resource logic
+            awsResponse = proxyClient.injectCredentialsAndInvokeV2(awsRequest, proxyClient.client()::describeSubscriptionFilters);
 
-        } catch (final AwsServiceException e) { // ResourceNotFoundException
-            /*
-             * While the handler contract states that the handler must always return a progress event,
-             * you may throw any instance of BaseHandlerException, as the wrapper map it to a progress event.
-             * Each BaseHandlerException maps to a specific error code, and you should map service exceptions as closely as possible
-             * to more specific error codes
-             */
-            throw new CfnGeneralServiceException(ResourceModel.TYPE_NAME, e); // e.g. https://github.com/aws-cloudformation/aws-cloudformation-resource-providers-logs/commit/2077c92299aeb9a68ae8f4418b5e932b12a8b186#diff-5761e3a9f732dc1ef84103dc4bc93399R56-R63
+        } catch (InvalidParameterException e) {
+            throw new CfnInvalidRequestException(e);
+        } catch (ResourceNotFoundException e) {
+            throw new CfnNotFoundException(e);
+        } catch (ServiceUnavailableException e) {
+            throw new CfnServiceInternalErrorException(e);
+        }
+
+        if (awsResponse.subscriptionFilters().isEmpty()) {
+            logger.log("Resource does not exist.");
+            throw new CfnNotFoundException(ResourceModel.TYPE_NAME,
+                Objects.toString(model.getPrimaryIdentifier()));
         }
 
         logger.log(String.format("%s has successfully been read.", ResourceModel.TYPE_NAME));
