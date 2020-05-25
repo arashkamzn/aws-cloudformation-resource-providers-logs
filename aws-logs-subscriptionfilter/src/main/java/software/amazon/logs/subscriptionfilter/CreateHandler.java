@@ -6,10 +6,12 @@ import java.util.Objects;
 import software.amazon.awssdk.awscore.AwsRequest;
 import software.amazon.awssdk.awscore.AwsResponse;
 import software.amazon.awssdk.awscore.exception.AwsServiceException;
+import software.amazon.awssdk.services.cloudwatchlogs.model.DescribeSubscriptionFiltersResponse;
 import software.amazon.awssdk.services.cloudwatchlogs.model.InvalidParameterException;
 import software.amazon.awssdk.services.cloudwatchlogs.model.LimitExceededException;
 import software.amazon.awssdk.services.cloudwatchlogs.model.OperationAbortedException;
 import software.amazon.awssdk.services.cloudwatchlogs.model.PutSubscriptionFilterRequest;
+import software.amazon.awssdk.services.cloudwatchlogs.model.PutSubscriptionFilterResponse;
 import software.amazon.awssdk.services.cloudwatchlogs.model.ServiceUnavailableException;
 import software.amazon.cloudformation.exceptions.CfnAlreadyExistsException;
 import software.amazon.cloudformation.exceptions.CfnGeneralServiceException;
@@ -19,6 +21,7 @@ import software.amazon.cloudformation.exceptions.CfnResourceConflictException;
 import software.amazon.cloudformation.exceptions.CfnServiceInternalErrorException;
 import software.amazon.cloudformation.exceptions.CfnServiceLimitExceededException;
 import software.amazon.cloudformation.proxy.AmazonWebServicesClientProxy;
+import software.amazon.cloudformation.proxy.HandlerErrorCode;
 import software.amazon.cloudformation.proxy.Logger;
 import software.amazon.cloudformation.proxy.ProgressEvent;
 import software.amazon.cloudformation.proxy.ProxyClient;
@@ -40,44 +43,43 @@ public class CreateHandler extends BaseHandlerStd {
 
         return ProgressEvent.progress(model, callbackContext)
 
-            .then(progress -> checkForPreCreateResourceExistence(proxy, request, proxyClient, progress))
+            .then(progress -> {
+                    logger.log("Checking pre-existence of the resource...");
+                    return preExistenceCheck(proxy, proxyClient, progress, logger)
+                        .done((response) -> checkBeforeCreate(response, model, callbackContext));
+                }
+            )
 
-            .then(progress ->
-
-                proxy.initiate("AWS-Logs-SubscriptionFilter::Create", proxyClient, model, callbackContext)
+            .then(progress -> {
+                logger.log("creating a proxy chain for service calls...");
+                return proxy.initiate("AWS-Logs-SubscriptionFilter::Create", proxyClient, model, callbackContext)
 
                     .translateToServiceRequest(Translator::translateToCreateRequest)
 
                     .makeServiceCall(this::createResource)
 
-                    .progress())
+                    .progress();
+                }
+            )
 
-            .then(progress -> new ReadHandler().handleRequest(proxy, request, callbackContext, proxyClient, logger));
+            .then(progress -> {
+                logger.log("Calling read handler to confirm the resource has been created...");
+                return new ReadHandler().handleRequest(proxy, request, callbackContext, proxyClient, logger);
+            });
     }
 
-    /**
-     * If your service API is not idempotent, meaning it does not distinguish duplicate create requests against some identifier (e.g; resource Name)
-     * and instead returns a 200 even though a resource already exists, you must first check if the resource exists here
-     * NOTE: If your service API throws 'ResourceAlreadyExistsException' for create requests this method is not necessary
-     * @param proxy Amazon webservice proxy to inject credentials correctly.
-     * @param request incoming resource handler request
-     * @param progressEvent event of the previous state indicating success, in progress with delay callback or failed state
-     * @return progressEvent indicating success, in progress with delay callback or failed state
-     */
-    private ProgressEvent<ResourceModel, CallbackContext> checkForPreCreateResourceExistence(
-        final AmazonWebServicesClientProxy proxy,
-        final ResourceHandlerRequest<ResourceModel> request,
-        final ProxyClient<CloudWatchLogsClient> proxyClient,
-        final ProgressEvent<ResourceModel, CallbackContext> progressEvent) {
-        final ResourceModel model = progressEvent.getResourceModel();
-        final CallbackContext callbackContext = progressEvent.getCallbackContext();
-        try {
-            new ReadHandler().handleRequest(proxy, request, callbackContext, proxyClient, logger);
-            throw new CfnAlreadyExistsException(ResourceModel.TYPE_NAME, Objects.toString(model.getPrimaryIdentifier()));
-        } catch (CfnNotFoundException e) {
-            logger.log(model.getPrimaryIdentifier() + " does not exist; creating the resource.");
+    private ProgressEvent<ResourceModel, CallbackContext> checkBeforeCreate(
+        final DescribeSubscriptionFiltersResponse describeSubscriptionFiltersResponse,
+        final ResourceModel model,
+        final CallbackContext callbackContext
+        ) {
+
+        if (describeSubscriptionFiltersResponse.subscriptionFilters().isEmpty()) {
+            logger.log("Empty result set.");
             return ProgressEvent.progress(model, callbackContext);
         }
+        logger.log("Resource already exists.");
+        return ProgressEvent.defaultFailureHandler(new CfnAlreadyExistsException(null), HandlerErrorCode.AlreadyExists);
     }
 
     /**
@@ -87,10 +89,10 @@ public class CreateHandler extends BaseHandlerStd {
      * @param proxyClient the aws service client to make the call
      * @return awsResponse create resource response
      */
-    private AwsResponse createResource(
+    private PutSubscriptionFilterResponse createResource(
         final PutSubscriptionFilterRequest awsRequest,
         final ProxyClient<CloudWatchLogsClient> proxyClient) {
-        AwsResponse awsResponse;
+        PutSubscriptionFilterResponse awsResponse;
         try {
             awsResponse = proxyClient.injectCredentialsAndInvokeV2(awsRequest, proxyClient.client()::putSubscriptionFilter);
         } catch (final InvalidParameterException e) {

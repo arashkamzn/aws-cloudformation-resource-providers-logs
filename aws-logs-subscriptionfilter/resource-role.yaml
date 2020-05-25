@@ -23,7 +23,7 @@ Resources:
             Statement:
               - Effect: Allow
                 Action:
-                - "logs:DeleteDestination"
+                - "logs:DeleteSubscriptionFilter"
                 - "logs:DescribeSubscriptionFilters"
                 - "logs:PutSubscriptionFilter"
                 Resource: "*"

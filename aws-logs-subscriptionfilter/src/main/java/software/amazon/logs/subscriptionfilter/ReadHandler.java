@@ -14,6 +14,7 @@ import software.amazon.cloudformation.exceptions.CfnNotFoundException;
 import software.amazon.cloudformation.exceptions.CfnServiceInternalErrorException;
 import software.amazon.cloudformation.proxy.AmazonWebServicesClientProxy;
 import software.amazon.cloudformation.proxy.Logger;
+import software.amazon.cloudformation.proxy.OperationStatus;
 import software.amazon.cloudformation.proxy.ProgressEvent;
 import software.amazon.cloudformation.proxy.ProxyClient;
 import software.amazon.cloudformation.proxy.ResourceHandlerRequest;
@@ -83,6 +84,9 @@ public class ReadHandler extends BaseHandlerStd {
      */
     private ProgressEvent<ResourceModel, CallbackContext> constructResourceModelFromResponse(
         final AwsResponse awsResponse) {
-        return ProgressEvent.defaultSuccessHandler(Translator.translateFromReadResponse(awsResponse));
+        return ProgressEvent.<ResourceModel, CallbackContext>builder()
+            .status(OperationStatus.SUCCESS)
+            .resourceModel(Translator.translateFromReadResponse(awsResponse))
+            .build();
     }
 }
