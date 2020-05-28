@@ -64,6 +64,9 @@ public class ReadHandler extends BaseHandlerStd {
             throw new CfnNotFoundException(e);
         } catch (ServiceUnavailableException e) {
             throw new CfnServiceInternalErrorException(e);
+        } catch (Exception ex) {
+            logger.log("unhandled exception " + ex.getMessage());
+            throw ex;
         }
 
         if (awsResponse.subscriptionFilters().isEmpty()) {

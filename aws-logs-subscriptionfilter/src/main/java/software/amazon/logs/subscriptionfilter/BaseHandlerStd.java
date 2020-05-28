@@ -1,13 +1,8 @@
 package software.amazon.logs.subscriptionfilter;
 
 
-import software.amazon.awssdk.services.cloudwatchlogs.model.DescribeSubscriptionFiltersRequest;
-import software.amazon.awssdk.services.cloudwatchlogs.model.DescribeSubscriptionFiltersResponse;
-import software.amazon.awssdk.services.cloudwatchlogs.model.InvalidParameterException;
-import software.amazon.awssdk.services.cloudwatchlogs.model.ServiceUnavailableException;
+
 import software.amazon.cloudformation.proxy.AmazonWebServicesClientProxy;
-import software.amazon.cloudformation.proxy.CallChain;
-import software.amazon.cloudformation.proxy.HandlerErrorCode;
 import software.amazon.cloudformation.proxy.Logger;
 import software.amazon.cloudformation.proxy.ProgressEvent;
 import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsClient;
@@ -39,32 +34,4 @@ public abstract class BaseHandlerStd extends BaseHandler<CallbackContext> {
     final ProxyClient<CloudWatchLogsClient> proxyClient,
     final Logger logger);
 
-  protected CallChain.Completed<DescribeSubscriptionFiltersRequest, DescribeSubscriptionFiltersResponse, CloudWatchLogsClient, ResourceModel, CallbackContext> preExistenceCheck(
-      final AmazonWebServicesClientProxy proxy,
-      final ProxyClient<CloudWatchLogsClient> proxyClient,
-      final ProgressEvent<ResourceModel, CallbackContext> progressEvent,
-      final Logger logger) {
-    final ResourceModel model = progressEvent.getResourceModel();
-    final CallbackContext callbackContext = progressEvent.getCallbackContext();
-    logger.log("checking pre-existence...");
-    return proxy.initiate("AWS-Logs-SubscriptionFilter::PreExistenceCheck", proxyClient, model, callbackContext)
-
-        .translateToServiceRequest(Translator::translateToReadRequest)
-
-        .makeServiceCall((awsRequest, sdkProxyClient) ->
-          proxyClient.injectCredentialsAndInvokeV2(awsRequest, proxyClient.client()::describeSubscriptionFilters)
-        )
-
-        .handleError((request, exception, client, model1, context1) -> {
-          if (exception instanceof InvalidParameterException) {
-            logger.log("invalid error.");
-            return ProgressEvent.failed(model, callbackContext, HandlerErrorCode.InvalidRequest, exception.getMessage());
-          }
-          else if (exception instanceof ServiceUnavailableException) {
-            logger.log("service unavailable.");
-            return ProgressEvent.failed(model, callbackContext, HandlerErrorCode.ServiceInternalError, exception.getMessage());
-          }
-          return ProgressEvent.progress(model, callbackContext);
-        });
-  }
 }

@@ -47,8 +47,8 @@
         "LogGroupName"
     ],
     "primaryIdentifier": [
-        "/properties/FilterName",
-        "/properties/LogGroupName"
+        "/properties/LogGroupName",
+        "/properties/FilterName"
     ],
     "createOnlyProperties": [
         "/properties/FilterName",
