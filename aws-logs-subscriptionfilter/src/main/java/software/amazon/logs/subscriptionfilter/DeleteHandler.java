@@ -7,7 +7,9 @@ import software.amazon.awssdk.services.cloudwatchlogs.model.DeleteSubscriptionFi
 import software.amazon.awssdk.services.cloudwatchlogs.model.InvalidParameterException;
 import software.amazon.awssdk.services.cloudwatchlogs.model.LimitExceededException;
 import software.amazon.awssdk.services.cloudwatchlogs.model.OperationAbortedException;
+import software.amazon.awssdk.services.cloudwatchlogs.model.ResourceNotFoundException;
 import software.amazon.awssdk.services.cloudwatchlogs.model.ServiceUnavailableException;
+import software.amazon.cloudformation.exceptions.CfnInternalFailureException;
 import software.amazon.cloudformation.exceptions.CfnInvalidRequestException;
 import software.amazon.cloudformation.exceptions.CfnNotFoundException;
 import software.amazon.cloudformation.exceptions.CfnResourceConflictException;
@@ -91,6 +93,11 @@ public class DeleteHandler extends BaseHandlerStd {
             throw new CfnResourceConflictException(e);
         } catch (final ServiceUnavailableException e) {
             throw new CfnServiceInternalErrorException(e);
+        } catch (final ResourceNotFoundException e) {
+            throw new CfnNotFoundException(e);
+        } catch (Exception e) {
+            logger.log("internal error " + e.getMessage());
+            throw new CfnInternalFailureException(e);
         }
 
         logger.log(String.format("%s successfully deleted.", ResourceModel.TYPE_NAME));
